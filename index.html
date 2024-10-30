@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bouncing Balls with Evil Circle</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f7f7f7;
+        }
+        canvas {
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    // 获取 canvas 元素并设置其宽度和高度
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // 定义 Ball 类
+    class Ball {
+        constructor(x, y, diameter, color) {
+            this.x = x;
+            this.y = y;
+            this.diameter = diameter;
+            this.color = color;
+            this.xSpeed = (Math.random() * 7) - 3.5;
+            this.ySpeed = (Math.random() * 7) - 3.5;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.fillStyle = this.color;
+            ctx.arc(this.x, this.y, this.diameter, 0, Math.PI * 2, false);
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        update() {
+            this.x += this.xSpeed;
+            this.y += this.ySpeed;
+
+            if (this.x < this.diameter / 2 || this.x > canvas.width - this.diameter / 2) {
+                this.xSpeed *= -1;
+            }
+            if (this.y < this.diameter / 2 || this.y > canvas.height - this.diameter / 2) {
+                this.ySpeed *= -1;
+            }
+
+            this.draw();
+        }
+
+        getBounds() {
+            return {
+                x1: this.x - this.diameter / 2,
+                y1: this.y - this.diameter / 2,
+                x2: this.x + this.diameter / 2,
+                y2: this.y + this.diameter / 2,
+            };
+        }
+    }
+
+    // 定义 EvilCircle 类
+    class EvilCircle extends Ball {
+        constructor(x, y, diameter, color) {
+            super(x, y, diameter, color);
+            this.xSpeed = 0;
+            this.ySpeed = 0;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 3;
+            ctx.arc(this.x, this.y, this.diameter, 0, Math.PI * 2, false);
+            ctx.stroke();
+            ctx.closePath();
+        }
+
+        update() {
+            this.x += this.xSpeed;
+            this.y += this.ySpeed;
+
+            // 边界检测
+            if (this.x < this.diameter / 2) {
+                this.x = this.diameter / 2;
+            }
+            if (this.x > canvas.width - this.diameter / 2) {
+                this.x = canvas.width - this.diameter / 2;
+            }
+            if (this.y < this.diameter / 2) {
+                this.y = this.diameter / 2;
+            }
+            if (this.y > canvas.height - this.diameter / 2) {
+                this.y = canvas.height - this.diameter / 2;
+            }
+
+            this.draw();
+        }
+
+        setControls() {
+            window.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        this.xSpeed = -5;
+                        break;
+                    case 'ArrowRight':
+                        this.xSpeed = 5;
+                        break;
+                    case 'ArrowUp':
+                        this.ySpeed = -5;
+                        break;
+                    case 'ArrowDown':
+                        this.ySpeed = 5;
+                        break;
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                        this.xSpeed = 0;
+                        break;
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                        this.ySpeed = 0;
+                        break;
+                }
+            });
+        }
+    }
+
+    // 创建球的实例
+    const balls = [];
+    const ballCount = 25;
+    for (let i = 0; i < ballCount; i++) {
+        const ball = new Ball(
+            Math.random() * canvas.width,
+            Math.random() * canvas.height,
+            20,
+            `hsla(${Math.random() * 360}, 100%, 50%, 0.7)`
+        );
+        balls.push(ball);
+    }
+
+    // 创建恶魔圈的实例
+    const evilCircle = new EvilCircle(canvas.width / 2, canvas.height / 2, 30, 'red');
+    evilCircle.setControls();
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < balls.length; i++) {
+            balls[i].update();
+
+            // 检测恶魔圈与球的碰撞
+            if (intersects(evilCircle.getBounds(), balls[i].getBounds())) {
+                balls.splice(i, 1);
+                i--;
+            }
+        }
+
+        evilCircle.update();
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    // 检测两个球是否碰撞
+    function intersects(b1, b2) {
+        return b1.x1 < b2.x2 && b1.x2 > b2.x1 && b1.y1 < b2.y2 && b1.y2 > b2.y1;
+    }
+</script>
+</body>
+</html>
